@@ -24,41 +24,26 @@ export const useS3Download = (): UseS3DownloadState => {
       setError(null);
       setProgress(0);
 
-      // Get signed download URL from API
+      setProgress(20);
+
+      // Use a proxy download endpoint instead of direct fetch to signed URL
       const params = new URLSearchParams({
         bucket,
         key,
-        expiresIn: '3600', // 1 hour
       });
 
-      const response = await fetch(`/api/s3/download?${params}`, {
+      const response = await fetch(`/api/s3/proxy-download?${params}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate download URL');
-      }
-
-      const result = await response.json();
-      if (!result.success || !result.data?.url) {
-        throw new Error('No download URL received');
-      }
-
-      // Download the file
-      setProgress(30);
-
-      const downloadResponse = await fetch(result.data.url);
-      if (!downloadResponse.ok) {
-        throw new Error('Failed to download file');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to download file');
       }
 
       setProgress(60);
 
-      const blob = await downloadResponse.blob();
+      const blob = await response.blob();
       setProgress(80);
 
       // Create download link
