@@ -1,23 +1,50 @@
 'use client';
 import Image from "next/image";
+import { UserMenu } from '@/components/auth/UserMenu';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-      <main className="text-center space-y-8 px-4">
-        <div className="space-y-4">
-          <div className="text-6xl">☁️</div>
-          <h1 className="text-4xl font-bold text-gray-900">S3 Browser</h1>
-          <p className="text-xl text-gray-600">
-            Securely browse your on-premises S3 storage
-          </p>
-        </div>
+  const router = useRouter();
 
-        <div className="pt-8">
-          <p className="text-gray-600 mb-4">
-            Select a bucket to get started
-          </p>
-          <BucketSelector />
+  useEffect(() => {
+    // Auto-redirect to default bucket if configured
+    const defaultBucket = process.env.NEXT_PUBLIC_DEFAULT_S3_BUCKET;
+    if (defaultBucket) {
+      router.push(`/browse/${encodeURIComponent(defaultBucket)}`);
+    }
+  }, [router]);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">☁️</span>
+            <h1 className="text-2xl font-bold text-gray-900">S3 Browser</h1>
+          </div>
+          <UserMenu />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4">
+        <div className="text-center space-y-8">
+          <div className="space-y-4">
+            <div className="text-6xl">☁️</div>
+            <h1 className="text-4xl font-bold text-gray-900">S3 Browser</h1>
+            <p className="text-xl text-gray-600">
+              Securely browse your on-premises S3 storage
+            </p>
+          </div>
+
+          <div className="pt-8">
+            <p className="text-gray-600 mb-4">
+              Select a bucket to get started
+            </p>
+            <BucketSelector />
+          </div>
         </div>
       </main>
     </div>
@@ -27,7 +54,6 @@ export default function Home() {
 // Bucket Selector Component
 import { useS3Buckets } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 
 function BucketSelector() {
   const { buckets, loading, error } = useS3Buckets();

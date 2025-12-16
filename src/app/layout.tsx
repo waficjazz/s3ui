@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { S3BrowserProvider } from "@/context/S3BrowserContext";
+import { SessionProvider } from "@/components/auth/SessionProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,9 +29,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <S3BrowserProvider>
-          {children}
-        </S3BrowserProvider>
+        <SessionProvider>
+          <S3BrowserProvider>
+            {children}
+          </S3BrowserProvider>
+        </SessionProvider>
       </body>
     </html>
   );
