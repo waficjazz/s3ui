@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Home, Folder, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface BreadcrumbNavProps {
@@ -49,7 +50,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         title="Go to bucket root"
         className="flex-shrink-0"
       >
-        🏠
+        <Home className="w-4 h-4" />
       </Button>
 
       {/* Breadcrumb Items */}
@@ -57,7 +58,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         <React.Fragment key={breadcrumb.path || 'root'}>
           {/* Separator */}
           {index > 0 && (
-            <span className="text-gray-400 flex-shrink-0">›</span>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
           )}
 
           {/* Breadcrumb Item */}
@@ -69,7 +70,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
           >
             {breadcrumb.isRoot ? (
               <div className="flex items-center gap-1">
-                <span>📁</span>
+                <Folder className="w-4 h-4" />
                 <span className="font-semibold">{breadcrumb.label}</span>
               </div>
             ) : (

@@ -9,6 +9,7 @@ import React from 'react';
 import { BrowseResponse, S3Object } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Folder, File, Grid3x3, List, Download, Trash2, MoreVertical, FolderClosed } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,12 +84,12 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   const getFileIcon = (isFolder: boolean, key: string) => {
     if (isFolder) {
-      return <span className="text-2xl">📁</span>;
+      return <FolderClosed className="w-8 h-8 text-amber-400" />;
     }
 
     const ext = key.split('.').pop()?.toLowerCase();
     // You can customize icons based on file extension here
-    return <span className="text-2xl">📄</span>;
+    return <File className="w-8 h-8 text-blue-400" />;
   };
 
   const getFileName = (key: string): string => {
@@ -110,7 +111,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
             className="w-10 h-10 p-0"
             title="Grid view"
           >
-            ⊞
+            <Grid3x3 className="w-4 h-4" />
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -119,7 +120,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
             className="w-10 h-10 p-0"
             title="List view"
           >
-            ☰
+            <List className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -247,7 +248,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                             onFolderClick(item.key);
                           }}
                         >
-                          📁 Open
+                          <Folder className="w-4 h-4 mr-2" />
+                          Open
                         </DropdownMenuItem>
                       )}
                       {!item.isFolder && (
@@ -257,7 +259,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                             onDownload(item.key, getFileName(item.key));
                           }}
                         >
-                          ⬇ Download
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
                         </DropdownMenuItem>
                       )}
                       {onDelete && (
@@ -282,7 +285,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {allItems.length === 0 && (
         <div className="p-8 text-center bg-gray-50 rounded-lg border border-gray-200">
-          <div className="text-5xl mb-4">📁</div>
+          <Folder className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <p className="text-gray-600">No files or folders in this directory</p>
         </div>
       )}

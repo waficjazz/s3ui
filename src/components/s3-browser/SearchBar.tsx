@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -30,7 +31,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading = fals
   return (
     <form onSubmit={handleSearch} className="flex gap-2 p-4 bg-white border border-gray-200 rounded-lg">
       <div className="flex-1 relative">
-        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <Input
           type="text"
           placeholder="Search files and folders..."
@@ -44,7 +45,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading = fals
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>

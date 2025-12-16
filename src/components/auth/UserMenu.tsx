@@ -8,6 +8,7 @@
 import React from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +88,8 @@ export const UserMenu: React.FC = () => {
           }}
           className="text-red-600 cursor-pointer"
         >
-          🚪 Sign Out
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

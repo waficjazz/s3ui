@@ -13,6 +13,7 @@ import { BreadcrumbNav } from '@/components/s3-browser/BreadcrumbNav';
 import { SearchBar } from '@/components/s3-browser/SearchBar';
 import { FileBrowser } from '@/components/s3-browser/FileBrowser';
 import { UserMenu } from '@/components/auth/UserMenu';
+import { Cloud, Folder, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -162,7 +163,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
           <div className="flex items-center justify-between gap-4">
             {/* Logo/Title */}
             <div className="flex items-center gap-2">
-              <span className="text-2xl">☁️</span>
+              <Cloud className="w-6 h-6 text-blue-500" />
               <h1 className="text-2xl font-bold text-gray-900">S3 Browser</h1>
             </div>
 
@@ -171,8 +172,9 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
               {/* Bucket Selector */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="min-w-48">
-                    📁 {bucket}
+                  <Button variant="outline" className="min-w-48 flex items-center gap-2">
+                    <Folder className="w-4 h-4" />
+                    {bucket}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 max-h-96 overflow-y-auto">
@@ -191,7 +193,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
                         onClick={() => handleBucketChange(b.name)}
                         className={bucket === b.name ? 'bg-blue-50' : ''}
                       >
-                        {bucket === b.name && '✓ '}
+                        {bucket === b.name && <Check className="w-4 h-4 mr-2" />}
                         {b.name}
                       </DropdownMenuItem>
                     ))

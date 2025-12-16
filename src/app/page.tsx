@@ -3,6 +3,7 @@ import Image from "next/image";
 import { UserMenu } from '@/components/auth/UserMenu';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Cloud, Folder } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">☁️</span>
+            <Cloud className="w-6 h-6 text-blue-500" />
             <h1 className="text-2xl font-bold text-gray-900">S3 Browser</h1>
           </div>
           <UserMenu />
@@ -32,7 +33,7 @@ export default function Home() {
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="text-center space-y-8">
           <div className="space-y-4">
-            <div className="text-6xl">☁️</div>
+            <Cloud className="w-24 h-24 mx-auto text-blue-500" />
             <h1 className="text-4xl font-bold text-gray-900">S3 Browser</h1>
             <p className="text-xl text-gray-600">
               Securely browse your on-premises S3 storage
@@ -93,7 +94,7 @@ function BucketSelector() {
           className="h-24 flex flex-col items-center justify-center gap-2 bg-white hover:bg-blue-50 border-2 border-gray-200 hover:border-blue-400 text-gray-900"
           variant="outline"
         >
-          <span className="text-3xl">📁</span>
+          <Folder className="w-8 h-8 text-amber-500" />
           <span className="font-semibold truncate w-full px-2">{bucket.name}</span>
         </Button>
       ))}
