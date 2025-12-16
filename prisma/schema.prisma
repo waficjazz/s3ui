@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// RBAC Access Rules
+// Stores unique access rules with associated groups
+model RbacAccessRule {
+  id                Int       @id @default(autoincrement())
+  
+  // Bucket and path identifier
+  bucketName        String    // e.g., "my-bucket"
+  path              String?   // e.g., "/folder1" or NULL for bucket root
+  
+  // Access level
+  accessType        AccessType @default(READ)
+  
+  // Include subfolders flag
+  // e.g., path="/folder1" + includeSubfolders=true means access to /folder1/*
+  includeSubfolders Boolean    @default(true)
+  
+  // Array of groups that have this access
+  // Groups come from user's azure_groups attribute in JWT
+  // e.g., ["x-mailing-list", "admin-group", "data-team"]
+  groups            String    // JSON array stored as string, e.g., '["group1", "group2"]'
+  
+  // Metadata
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  
+  // Audit logs
+  auditLogs         RbacAuditLog[]
+  
+  // Unique constraint: same bucket/path/accessType combination appears only once
+  @@unique([bucketName, path, accessType], name: "unique_bucket_path_access")
+  
+  // Indexes for fast lookups
+  @@index([bucketName, path], name: "idx_bucket_path")
+  
+  @@map("rbac_access_rules")
+}
+
+// Audit Log for RBAC changes
+// Tracks who made what changes and when
+model RbacAuditLog {
+  id            Int              @id @default(autoincrement())
+  
+  action        String           // 'CREATE', 'UPDATE', 'DELETE'
+  
+  // Reference to the rule that was changed
+  ruleId        Int?
+  rule          RbacAccessRule?  @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  
+  bucketName    String
+  path          String?
+  accessType    AccessType
+  groups        String           // JSON array as string
+  
+  // Who made the change
+  changedBy     String
+  
+  // Old and new values for auditing
+  oldValues     String?          // JSON stored as string
+  newValues     String?          // JSON stored as string
+  
+  createdAt     DateTime         @default(now())
+  
+  @@index([createdAt], name: "idx_audit_created_at")
+  @@index([ruleId], name: "idx_audit_rule_id")
+  
+  @@map("rbac_audit_log")
+}
+
+// Enum for access types
+enum AccessType {
+  READ
+  WRITE
+}
