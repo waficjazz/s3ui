@@ -13,7 +13,7 @@ import { BreadcrumbNav } from '@/components/s3-browser/BreadcrumbNav';
 import { SearchBar } from '@/components/s3-browser/SearchBar';
 import { FileBrowser } from '@/components/s3-browser/FileBrowser';
 import { UserMenu } from '@/components/auth/UserMenu';
-import { Cloud, Folder, Check } from 'lucide-react';
+import { Cloud, Folder, Check, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -290,7 +290,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
                         }
                         className="ml-2 flex-shrink-0"
                       >
-                        ⬇
+                        <Download className="w-4 h-4" />
                       </Button>
                     )}
                   </div>

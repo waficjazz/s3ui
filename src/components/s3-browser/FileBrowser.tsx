@@ -172,7 +172,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                         onDownload(item.key, getFileName(item.key));
                       }}
                     >
-                      ⬇ Download
+                      <Download className="w-3 h-3 mr-1" />
+                      Download
                     </Button>
                   </div>
                 )}
@@ -190,11 +191,13 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {/* List View */}
       {viewMode === 'list' && (
-        <div className="space-y-2">
+        <div className="border-t border-b border-gray-200 overflow-hidden">
           {allItems.map((item, index) => (
-            <Card
+            <div
               key={`${item.key}-${index}`}
-              className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              className={`p-4 hover:bg-gray-200 transition-colors cursor-pointer ${
+                index !== allItems.length - 1 ? 'border-b border-gray-200' : ''
+              }`}
               onClick={() => {
                 if (item.isFolder) {
                   onFolderClick(item.key);
@@ -230,7 +233,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                       }}
                       title="Download file"
                     >
-                      ⬇
+                      <Download className="w-4 h-4" />
                     </Button>
                   )}
 
@@ -278,7 +281,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                   </DropdownMenu>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
