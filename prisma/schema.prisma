@@ -10,7 +10,7 @@ datasource db {
 }
 
 // RBAC Access Rules
-// Stores unique access rules with associated groups
+// Stores unique access rules with associated groups via relationship
 model RbacAccessRule {
   id                Int       @id @default(autoincrement())
   
@@ -25,17 +25,15 @@ model RbacAccessRule {
   // e.g., path="/folder1" + includeSubfolders=true means access to /folder1/*
   includeSubfolders Boolean    @default(true)
   
-  // Array of groups that have this access
-  // Groups come from user's azure_groups attribute in JWT
-  // e.g., ["x-mailing-list", "admin-group", "data-team"]
-  groups            String    // JSON array stored as string, e.g., '["group1", "group2"]'
-  
   // Metadata
   description       String?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  updatedAt         DateTime? @updatedAt
   createdBy         String?
   updatedBy         String?
+  
+  // Many-to-many relationship with groups
+  ruleGroups        RbacRuleGroup[]
   
   // Audit logs
   auditLogs         RbacAuditLog[]
@@ -47,6 +45,30 @@ model RbacAccessRule {
   @@index([bucketName, path], name: "idx_bucket_path")
   
   @@map("rbac_access_rules")
+}
+
+// RBAC Rule Groups - Join table
+// Maps groups to access rules (many-to-many relationship)
+model RbacRuleGroup {
+  id        Int    @id @default(autoincrement())
+  
+  // Foreign key to access rule
+  ruleId    Int?
+  rule      RbacAccessRule? @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  // Group name (e.g., "is-dev-ops", "admin-group")
+  groupName String
+  
+  createdAt DateTime @default(now())
+  
+  // Unique constraint: same group appears only once per rule
+  @@unique([ruleId, groupName], name: "unique_rule_group")
+  
+  // Index for fast group lookups
+  @@index([groupName], name: "idx_group_name")
+  @@index([ruleId], name: "idx_rule_id")
+  
+  @@map("rbac_rule_groups")
 }
 
 // Audit Log for RBAC changes
@@ -63,7 +85,7 @@ model RbacAuditLog {
   bucketName    String
   path          String?
   accessType    AccessType
-  groups        String           // JSON array as string
+  groupNames    String           // JSON array as string of affected groups
   
   // Who made the change
   changedBy     String

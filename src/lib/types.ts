@@ -2,6 +2,9 @@
  * S3 Related Types and Interfaces
  */
 
+import { JWT } from 'next-auth/jwt';
+import { Session } from 'next-auth';
+
 export interface S3Object {
   key: string;
   size: number;
@@ -68,4 +71,35 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+
+export interface BucketPermission {
+        accessType: 'READ' | 'WRITE' ;
+        includeSubfolders: boolean;
+}
+
+export interface CustomJWT extends JWT {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  groups?: string[];
+  permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
+  permissionsHash?: string;
+  permissionsRefreshedAt?: number;
+}
+
+export interface CustomSession extends Session {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    id?: string;
+    preferred_username?: string;
+    groups?: string[];
+    permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
+  };
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
 }
