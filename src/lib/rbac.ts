@@ -7,6 +7,41 @@ import { prisma } from './prisma';
 import { BucketPermission } from './types';
 
 /**
+ * Check if user is part of a group with admin privileges
+ * Queries the database to find if any of the user's groups has isAdmin: true
+ * 
+ * @param groups - Array of group names the user belongs to
+ * @returns boolean - true if user is in at least one admin group, false otherwise
+ */
+export async function isUserAdmin(groups: string[]): Promise<boolean> {
+  if (!groups || groups.length === 0) {
+    console.log('[RBAC] isUserAdmin: No groups provided');
+    return false;
+  }
+
+  try {
+    console.log(`[RBAC] Checking admin status for groups: ${JSON.stringify(groups)}`);
+
+    // Query for any rule group with isAdmin=true that matches user's groups
+    const adminGroup = await prisma.rbacRuleGroup.findFirst({
+      where: {
+        groupName: {
+          in: groups,
+        },
+        isAdmin: true,
+      },
+    });
+
+    const hasAdmin = !!adminGroup;
+    console.log(`[RBAC] User admin status: ${hasAdmin}`);
+    return hasAdmin;
+  } catch (error) {
+    console.error('[RBAC] Error checking admin status:', error);
+    return false;
+  }
+}
+
+/**
  * Get all access rules for given groups
  * Optimized query using relational join
  */
@@ -243,4 +278,5 @@ export default {
   getPermissionsHash,
   hasPermission,
   refreshUserPermissions,
+  isUserAdmin,
 };

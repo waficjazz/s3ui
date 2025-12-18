@@ -29,8 +29,6 @@ model RbacAccessRule {
   description       String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime? @updatedAt
-  createdBy         String?
-  updatedBy         String?
   
   // Many-to-many relationship with groups
   ruleGroups        RbacRuleGroup[]
@@ -58,6 +56,9 @@ model RbacRuleGroup {
   
   // Group name (e.g., "is-dev-ops", "admin-group")
   groupName String
+  
+  // Admin flag - whether this group has admin privileges
+  isAdmin   Boolean @default(false)
   
   createdAt DateTime @default(now())
   

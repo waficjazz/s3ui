@@ -5,7 +5,7 @@
 
 import type { NextAuthOptions } from 'next-auth';
 import KeycloakProvider from 'next-auth/providers/keycloak';
-import { getUserPermissions, formatPermissions, getPermissionsHash } from './rbac';
+import { getUserPermissions, formatPermissions, getPermissionsHash, isUserAdmin } from './rbac';
 import { CustomJWT, CustomSession } from './types';
 
 
@@ -111,6 +111,15 @@ export const authOptions: NextAuthOptions = {
           customToken.permissionsHash = '';
           customToken.permissionsRefreshedAt = Date.now();
         }
+
+        try {
+          const isAdmin = await isUserAdmin(groups || []);
+          customToken.isAdmin = isAdmin;
+          console.log(`[RBAC] User admin status: ${isAdmin}`);
+        } catch (error) {
+          console.error('[RBAC] Failed to check admin status:', error);
+          customToken.isAdmin = false;
+        }
         
         return customToken;
       }
@@ -146,6 +155,7 @@ export const authOptions: NextAuthOptions = {
           } catch (error) {
             console.error('Failed to refresh RBAC permissions:', error);
           }
+          //TODO: refresh isAdmin status
         }
         
         return customToken;
@@ -203,8 +213,8 @@ export const authOptions: NextAuthOptions = {
     },
 
     // Called when session is accessed
-    async session({ session, token }): Promise<CustomSession> {
-      const customSession: CustomSession = session;
+    async session({ session, token } ): Promise<CustomSession> {
+      const customSession   = session as CustomSession;
       const customToken = token as CustomJWT;
       
       if (token) {
@@ -217,6 +227,7 @@ export const authOptions: NextAuthOptions = {
           preferred_username: (token as any).preferred_username,
           groups,
           permissions: customToken.permissions,
+          isAdmin: customToken.isAdmin
         } as CustomSession['user'];
         customSession.accessToken = customToken.accessToken;
         customSession.refreshToken = customToken.refreshToken;

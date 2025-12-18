@@ -25,6 +25,11 @@ export const middleware = withAuth(
           return !!token;
         }
 
+        // Admin routes require authentication and admin status
+        if (req.nextUrl.pathname.startsWith('/admin')) {
+          return !!(token && (token as any).isAdmin === true);
+        }
+
         // All other routes are accessible
         return true;
       },
@@ -41,6 +46,8 @@ export const config = {
     '/',
     // Protect browse routes
     '/browse/:path*',
+    // Protect admin routes
+    '/admin/:path*',
     // Allow auth routes
     '/api/auth/:path*',
   ],

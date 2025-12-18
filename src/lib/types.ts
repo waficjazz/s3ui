@@ -87,6 +87,7 @@ export interface CustomJWT extends JWT {
   permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
   permissionsHash?: string;
   permissionsRefreshedAt?: number;
+  isAdmin: boolean ;
 }
 
 export interface CustomSession extends Session {
@@ -97,9 +98,11 @@ export interface CustomSession extends Session {
     id?: string;
     preferred_username?: string;
     groups?: string[];
+    isAdmin: boolean ;
     permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
-  };
+  },
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
+
 }

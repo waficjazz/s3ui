@@ -14,14 +14,13 @@ import { getServerSession } from 'next-auth/next';
 import { listObjects } from '@/lib/s3-client';
 import { hasPermission, hasBucketAccess } from '@/lib/rbac';
 import { authOptions } from '@/lib/auth';
-import { ApiResponse, BrowseResponse } from '@/lib/types';
+import { ApiResponse, BrowseResponse, CustomSession } from '@/lib/types';
 
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse<BrowseResponse>>> {
   try {
-    // ✅ Get user session and permissions
-    const session = await getServerSession(authOptions);
+    const session : CustomSession | null = await getServerSession(authOptions);
     
     if (!session?.user) {
       return NextResponse.json(
@@ -34,7 +33,7 @@ export async function GET(
       );
     }
 
-    const userPermissions = (session.user as any).permissions;
+    const userPermissions = (session.user).permissions;
     
     if (!userPermissions) {
       return NextResponse.json(
