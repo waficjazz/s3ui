@@ -67,7 +67,7 @@ export async function GET(
       );
     }
 
-    // ✅ Check RBAC permissions (skip for admins)
+    // Check RBAC permissions (skip for admins)
     if (!admin) {
       // If no prefix specified (root), check if user has access to ANY path in bucket
       // If prefix specified, check if user has access to that specific path
@@ -106,10 +106,10 @@ export async function GET(
     }
 
 
-    // ✅ List objects from S3 (one call)
+    // List objects from S3 (one call)
     const result = await listObjects(bucket, prefix, maxKeys, continuationToken);
 
-    // ✅ Filter objects - only return items user has permission for (skip for admins)
+    // Filter objects - only return items user has permission for (skip for admins)
     const filteredObjects = admin
       ? result.objects
       : result.objects.filter((obj) => {
@@ -120,7 +120,7 @@ export async function GET(
           return hasAccess;
         });
 
-    // ✅ Filter prefixes (folders) - only return subfolders user has permission for (skip for admins)
+    // Filter prefixes (folders) - only return subfolders user has permission for (skip for admins)
     const filteredPrefixes = admin
       ? result.commonPrefixes
       : result.commonPrefixes.filter((prefix) => {

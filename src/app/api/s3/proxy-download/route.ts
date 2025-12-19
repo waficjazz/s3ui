@@ -1,17 +1,41 @@
 /**
  * API Route: GET /api/s3/proxy-download
  * Proxies file download from S3 to avoid CORS issues
+ * Checks RBAC permissions (skipped for admins)
  * Query params:
  *   - bucket: string (required)
  *   - key: string (required, object key)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { getS3Client } from '@/lib/s3-client';
+import { hasPermission } from '@/lib/rbac';
+import { authOptions } from '@/lib/auth';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    const admin = (session.user).isAdmin;
+    const userPermissions = (session.user).permissions;
+
+    // If not admin and no permissions, deny access
+    if (!admin && !userPermissions) {
+      return NextResponse.json(
+        { error: 'No permissions found' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     const bucket = searchParams.get('bucket');
@@ -30,6 +54,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         { error: 'Key parameter is required' },
         { status: 400 }
       );
+    }
+
+    // Check RBAC permissions (skip for admins)
+    if (!admin) {
+      if (!hasPermission(userPermissions, bucket, key, 'READ')) {
+        console.log(`[RBAC] User denied READ access to ${bucket}/${key}`);
+        return NextResponse.json(
+          { error: `No READ access to ${bucket}/${key}` },
+          { status: 403 }
+        );
+      }
+      console.log(`[RBAC] User granted READ access to ${bucket}/${key}`);
+    } else {
+      console.log(`[Admin] Bypassing permission checks for admin user`);
     }
 
     // Get file from S3

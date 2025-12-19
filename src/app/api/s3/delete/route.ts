@@ -1,6 +1,7 @@
 /**
  * API Route: DELETE /api/s3/delete
  * Deletes an object from S3 bucket
+ * Checks RBAC permissions (skipped for admins)
  * Query params:
  *   - bucket: string (required)
  *   - key: string (required, object key)
@@ -10,13 +11,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { deleteObject, deleteObjects } from '@/lib/s3-client';
+import { hasPermission } from '@/lib/rbac';
+import { authOptions } from '@/lib/auth';
 import { ApiResponse } from '@/lib/types';
 
 export async function DELETE(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse>> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'Not authenticated',
+        },
+        { status: 401 }
+      );
+    }
+
+    const admin = (session.user).isAdmin;
+    const userPermissions = (session.user).permissions;
+
+    // If not admin and no permissions, deny access
+    if (!admin && !userPermissions) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'No permissions found',
+        },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     const bucket = searchParams.get('bucket');
@@ -37,6 +69,24 @@ export async function DELETE(
 
     // Handle single file deletion
     if (key) {
+      // Check RBAC permissions (skip for admins)
+      if (!admin) {
+        if (!hasPermission(userPermissions, bucket, key, 'WRITE')) {
+          console.log(`[RBAC] User denied WRITE access to ${bucket}/${key}`);
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'FORBIDDEN',
+              message: `No WRITE access to ${bucket}/${key}`,
+            },
+            { status: 403 }
+          );
+        }
+        console.log(`[RBAC] User granted WRITE access to ${bucket}/${key}`);
+      } else {
+        console.log(`[Admin] Bypassing permission checks for admin user`);
+      }
+
       await deleteObject(bucket, key);
 
       return NextResponse.json({
@@ -51,6 +101,26 @@ export async function DELETE(
         const keys = JSON.parse(keysParam);
         if (!Array.isArray(keys)) {
           throw new Error('Keys must be an array');
+        }
+
+        // Check RBAC permissions for all keys (skip for admins)
+        if (!admin) {
+          for (const k of keys) {
+            if (!hasPermission(userPermissions, bucket, k, 'WRITE')) {
+              console.log(`[RBAC] User denied WRITE access to ${bucket}/${k}`);
+              return NextResponse.json(
+                {
+                  success: false,
+                  error: 'FORBIDDEN',
+                  message: `No WRITE access to ${bucket}/${k}`,
+                },
+                { status: 403 }
+              );
+            }
+          }
+          console.log(`[RBAC] User granted WRITE access to all files`);
+        } else {
+          console.log(`[Admin] Bypassing permission checks for admin user`);
         }
 
         await deleteObjects(bucket, keys);

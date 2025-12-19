@@ -1,6 +1,7 @@
 /**
  * API Route: GET /api/s3/download
  * Generates a signed download URL for an S3 object
+ * Checks RBAC permissions (skipped for admins)
  * Query params:
  *   - bucket: string (required)
  *   - key: string (required, object key)
@@ -8,13 +9,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { getDownloadUrl } from '@/lib/s3-client';
+import { hasPermission } from '@/lib/rbac';
+import { authOptions } from '@/lib/auth';
 import { ApiResponse } from '@/lib/types';
 
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse<{ url: string; expiresIn: number }>>> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'Not authenticated',
+        },
+        { status: 401 }
+      );
+    }
+
+    const admin = (session.user).isAdmin;
+    const userPermissions = (session.user).permissions;
+
+    // If not admin and no permissions, deny access
+    if (!admin && !userPermissions) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'No permissions found',
+        },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     const bucket = searchParams.get('bucket');
@@ -42,6 +74,24 @@ export async function GET(
         },
         { status: 400 }
       );
+    }
+
+    // Check RBAC permissions (skip for admins)
+    if (!admin) {
+      if (!hasPermission(userPermissions, bucket, key, 'READ')) {
+        console.log(`[RBAC] User denied READ access to ${bucket}/${key}`);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'FORBIDDEN',
+            message: `No READ access to ${bucket}/${key}`,
+          },
+          { status: 403 }
+        );
+      }
+      console.log(`[RBAC] User granted READ access to ${bucket}/${key}`);
+    } else {
+      console.log(`[Admin] Bypassing permission checks for admin user`);
     }
 
     // Generate signed URL

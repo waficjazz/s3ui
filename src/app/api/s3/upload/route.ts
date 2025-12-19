@@ -1,6 +1,7 @@
 /**
  * API Route: POST /api/s3/upload
  * Uploads a file to S3 bucket
+ * Checks RBAC permissions (skipped for admins)
  * Body: FormData with file and metadata
  *   - bucket: string (required)
  *   - key: string (required, destination path)
@@ -8,13 +9,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { uploadObject } from '@/lib/s3-client';
+import { hasPermission } from '@/lib/rbac';
+import { authOptions } from '@/lib/auth';
 import { ApiResponse } from '@/lib/types';
 
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse>> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'Not authenticated',
+        },
+        { status: 401 }
+      );
+    }
+
+    const admin = (session.user).isAdmin;
+    const userPermissions = (session.user).permissions;
+
+    // If not admin and no permissions, deny access
+    if (!admin && !userPermissions) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'No permissions found',
+        },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
 
     const bucket = formData.get('bucket') as string;
@@ -53,6 +85,24 @@ export async function POST(
         },
         { status: 400 }
       );
+    }
+
+    // Check RBAC permissions (skip for admins)
+    if (!admin) {
+      if (!hasPermission(userPermissions, bucket, key, 'WRITE')) {
+        console.log(`[RBAC] User denied WRITE access to ${bucket}/${key}`);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'FORBIDDEN',
+            message: `No WRITE access to ${bucket}/${key}`,
+          },
+          { status: 403 }
+        );
+      }
+      console.log(`[RBAC] User granted WRITE access to ${bucket}/${key}`);
+    } else {
+      console.log(`[Admin] Bypassing permission checks for admin user`);
     }
 
     // Convert file to buffer
