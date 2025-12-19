@@ -1,6 +1,7 @@
 'use client';
 import Image from "next/image";
 import { UserMenu } from '@/components/auth/UserMenu';
+import { AdminButton } from '@/components/auth/AdminButton';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Cloud, Folder } from 'lucide-react';
@@ -23,9 +24,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Cloud className="w-6 h-6 text-blue-500" />
-            <h1 className="text-2xl font-bold text-gray-900">S3 Browser</h1>
+            <h1 className="text-2xl font-bold text-gray-900">S3 Browsessr</h1>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-3">
+            <AdminButton />
+            <UserMenu />
+          </div>
         </div>
       </header>
 

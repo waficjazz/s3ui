@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AdminButton } from '@/components/auth/AdminButton';
 
 interface BrowsePageProps {
   params: Promise<{
@@ -202,6 +203,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
               </DropdownMenu>
 
               {/* User Menu */}
+              <AdminButton  />
               <UserMenu />
             </div>
           </div>

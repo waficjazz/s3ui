@@ -22,8 +22,8 @@ export async function isUserAdmin(groups: string[]): Promise<boolean> {
   try {
     console.log(`[RBAC] Checking admin status for groups: ${JSON.stringify(groups)}`);
 
-    // Query for any rule group with isAdmin=true that matches user's groups
-    const adminGroup = await prisma.rbacRuleGroup.findFirst({
+    // Query for any group with isAdmin=true that matches user's groups
+    const adminGroup = await prisma.rbacGroup.findFirst({
       where: {
         groupName: {
           in: groups,
@@ -43,7 +43,7 @@ export async function isUserAdmin(groups: string[]): Promise<boolean> {
 
 /**
  * Get all access rules for given groups
- * Optimized query using relational join
+ * Optimized query using many-to-many relational join
  */
 export async function getUserPermissions(groups: string[]) {
   if (!groups || groups.length === 0) {
@@ -54,27 +54,33 @@ export async function getUserPermissions(groups: string[]) {
   try {
     console.log(`[RBAC] Querying rules for groups: ${JSON.stringify(groups)}`);
     
-    // Use relational query to find rules where any group matches
+    // Query rules through the many-to-many relationship
     const rules  = await (prisma.rbacAccessRule.findMany  ) ({
       where: {
-        ruleGroups: {
+        groups: {
           some: {
-            groupName: {
-              in: groups,
+            group: {
+              groupName: {
+                in: groups,
+              },
             },
           },
         },
       },
       include: {
-        ruleGroups: true,
+        groups: {
+          include: {
+            group: true,
+          },
+        },
       },
       orderBy: [{ bucketName: 'asc' }, { path: 'asc' }],
     });
 
     console.log(`[RBAC] Query returned ${rules.length} rules`);
     rules.forEach((rule: any) => {
-      const ruleGroupNames = rule.ruleGroups.map((rg: any) => rg.groupName).join(', ');
-      console.log(`[RBAC] - ${rule.bucketName}/${rule.path || '/'}: ${rule.accessType} (groups: ${ruleGroupNames})`);
+      const groupNames = rule.groups.map((rg: any) => rg.group.groupName).join(', ');
+      console.log(`[RBAC] - ${rule.bucketName}/${rule.path || '/'}: ${rule.accessType} (groups: ${groupNames})`);
     });
 
     return rules;

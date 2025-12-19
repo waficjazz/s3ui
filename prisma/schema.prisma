@@ -9,8 +9,31 @@ datasource db {
   provider = "sqlite"
 }
 
+// RBAC Groups - Standalone model
+// Represents user groups with optional admin privileges
+model RbacGroup {
+  id        Int    @id @default(autoincrement())
+  
+  // Group name (e.g., "is-dev-ops", "admin-group")
+  groupName String @unique
+  
+  // Admin flag - whether this group has admin privileges
+  isAdmin   Boolean @default(false)
+  
+  // Many-to-many relationship to rules via join table
+  rules     RuleGroup[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  
+  // Index for fast group lookups
+  @@index([groupName], name: "idx_group_name")
+  
+  @@map("rbac_groups")
+}
+
 // RBAC Access Rules
-// Stores unique access rules with associated groups via relationship
+// Stores unique access rules with associated groups via many-to-many relationship
 model RbacAccessRule {
   id                Int       @id @default(autoincrement())
   
@@ -25,13 +48,13 @@ model RbacAccessRule {
   // e.g., path="/folder1" + includeSubfolders=true means access to /folder1/*
   includeSubfolders Boolean    @default(true)
   
+  // Many-to-many relationship to groups via join table
+  groups            RuleGroup[]
+  
   // Metadata
   description       String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime? @updatedAt
-  
-  // Many-to-many relationship with groups
-  ruleGroups        RbacRuleGroup[]
   
   // Audit logs
   auditLogs         RbacAuditLog[]
@@ -45,31 +68,28 @@ model RbacAccessRule {
   @@map("rbac_access_rules")
 }
 
-// RBAC Rule Groups - Join table
-// Maps groups to access rules (many-to-many relationship)
-model RbacRuleGroup {
+// Join table for many-to-many relationship between rules and groups
+model RuleGroup {
   id        Int    @id @default(autoincrement())
   
-  // Foreign key to access rule
-  ruleId    Int?
-  rule      RbacAccessRule? @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  // Foreign keys
+  ruleId    Int
+  groupId   Int
   
-  // Group name (e.g., "is-dev-ops", "admin-group")
-  groupName String
-  
-  // Admin flag - whether this group has admin privileges
-  isAdmin   Boolean @default(false)
+  // Relations
+  rule      RbacAccessRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  group     RbacGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
   
   // Unique constraint: same group appears only once per rule
-  @@unique([ruleId, groupName], name: "unique_rule_group")
+  @@unique([ruleId, groupId], name: "unique_rule_group")
   
-  // Index for fast group lookups
-  @@index([groupName], name: "idx_group_name")
+  // Indexes for fast lookups
   @@index([ruleId], name: "idx_rule_id")
+  @@index([groupId], name: "idx_group_id")
   
-  @@map("rbac_rule_groups")
+  @@map("rule_groups")
 }
 
 // Audit Log for RBAC changes

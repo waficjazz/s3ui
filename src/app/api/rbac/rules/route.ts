@@ -12,31 +12,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
-import { ApiResponse, CustomSession } from '@/lib/types';
-import { isUserAdmin } from '@/lib/rbac';
+import { ApiResponse, RbacGroup, RbacRule } from '@/lib/types';
 
-// Type definitions
-interface RbacRule {
-  id: number;
-  bucketName: string;
-  path: string | null;
-  accessType: 'READ' | 'WRITE';
-  includeSubfolders: boolean;
-  description: string | null;
-  createdAt: Date;
-  updatedAt: Date | null;
-  ruleGroups: Array<{
-    id: number;
-    groupName: string;
-    isAdmin: boolean;
-    createdAt: Date;
-  }>;
-}
 
-interface GroupData {
-  name: string;
-  isAdmin?: boolean;
-}
 
 interface RbacRuleRequest {
   bucketName: string;
@@ -44,7 +22,7 @@ interface RbacRuleRequest {
   accessType: 'READ' | 'WRITE';
   includeSubfolders?: boolean;
   description?: string;
-  groupNames: string[] | GroupData[];
+  groupIds: number[];
 }
 
 interface RbacRuleUpdateRequest {
@@ -53,7 +31,7 @@ interface RbacRuleUpdateRequest {
   accessType?: 'READ' | 'WRITE';
   includeSubfolders?: boolean;
   description?: string;
-  groupNames?: string[] | GroupData[];
+  groupIds?: number[];
 }
 
 /**
@@ -63,11 +41,11 @@ interface RbacRuleUpdateRequest {
  *   - bucketName?: string - Filter by bucket name
  *   - path?: string - Filter by path
  *   - accessType?: READ|WRITE - Filter by access type
- *   - groupName?: string - Filter by group name
+ *   - groupId?: number - Filter by group ID
  */
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<RbacRule[]>>> {
+export async function GET(request: NextRequest) : Promise<NextResponse<ApiResponse<RbacRule[]>>> {
   try {
-    const session  = await getServerSession(authOptions) as CustomSession | null;
+    const session  = await getServerSession(authOptions) ;
     
     if (!session?.user) {
       return NextResponse.json(
@@ -81,7 +59,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     }
 
     // Check admin permission
-    const admin = await isUserAdmin(session.user?.groups || []);
+    const admin = (session.user as any).isAdmin;
     if (!admin) {
       return NextResponse.json(
         {
@@ -97,7 +75,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     const bucketName = searchParams.get('bucketName');
     const path = searchParams.get('path');
     const accessType = searchParams.get('accessType');
-    const groupName = searchParams.get('groupName');
+    const groupId = searchParams.get('groupId');
 
     // Build filter conditions
     const where: any = {};
@@ -117,13 +95,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       where.accessType = accessType;
     }
 
-    if (groupName) {
-      where.ruleGroups = {
+    if (groupId) {
+      where.groups = {
         some: {
-          groupName: {
-            contains: groupName,
-            mode: 'insensitive',
-          },
+          groupId: parseInt(groupId),
         },
       };
     }
@@ -131,12 +106,16 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     const rules = await prisma.rbacAccessRule.findMany({
       where,
       include: {
-        ruleGroups: {
-          select: {
-            id: true,
-            groupName: true,
-            isAdmin: true,
-            createdAt: true,
+        groups: {
+          include: {
+            group: {
+              select: {
+                id: true,
+                groupName: true,
+                isAdmin: true,
+                createdAt: true,
+              },
+            },
           },
         },
       },
@@ -172,11 +151,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
  *   - accessType: READ | WRITE (required)
  *   - includeSubfolders?: boolean (default: true)
  *   - description?: string (optional)
- *   - groupNames: string[] (required, at least one group)
+ *   - groupIds: number[] (required, at least one group)
  */
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<RbacRule>>> {
+export async function POST(request: NextRequest) : Promise<NextResponse<ApiResponse<RbacRule>>> {
   try {
-    const session = await getServerSession(authOptions) as CustomSession | null;
+    const session = await getServerSession(authOptions) ;
     
     if (!session?.user) {
       return NextResponse.json(
@@ -190,7 +169,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     }
 
     // Check admin permission
-    const admin = await isUserAdmin(session.user?.groups || []);
+    const admin = (session.user as any).isAdmin;
     if (!admin) {
       return NextResponse.json(
         {
@@ -227,25 +206,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    if (!body.groupNames || body.groupNames.length === 0) {
+    if (!body.groupIds || body.groupIds.length === 0) {
       return NextResponse.json(
         {
           success: false,
           error: 'VALIDATION_ERROR',
-          message: 'At least one group name is required',
+          message: 'At least one groupId is required',
         },
         { status: 400 }
       );
     }
 
-    // Check for duplicate rule
-    const existingRule = await prisma.rbacAccessRule.findUnique({
-      where: {
-        unique_bucket_path_access: {
-          bucketName: body.bucketName,
-          path: body.path || '',
-          accessType: body.accessType,
+    // Verify all groups exist
+    const groups = await prisma.rbacGroup.findMany({
+      where: { id: { in: body.groupIds } },
+    });
+
+    if (groups.length !== body.groupIds.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'NOT_FOUND',
+          message: 'One or more groups not found',
         },
+        { status: 404 }
+      );
+    }
+
+    // Check for duplicate rule (same bucket/path/accessType)
+    const existingRule = await prisma.rbacAccessRule.findFirst({
+      where: {
+        bucketName: body.bucketName,
+        path: body.path || null,
+        accessType: body.accessType,
       },
     });
 
@@ -268,26 +261,25 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         accessType: body.accessType,
         includeSubfolders: body.includeSubfolders !== false,
         description: body.description || null,
-        ruleGroups: {
+        groups: {
           createMany: {
-            data: body.groupNames.map((group) => {
-              // Handle both string and object formats
-              const groupName = typeof group === 'string' ? group : group.name;
-              const isAdmin = typeof group === 'string' ? false : (group.isAdmin || false);
-              return {
-                groupName,
-                isAdmin,
-              };
-            }),
+            data: body.groupIds.map((groupId) => ({
+              groupId,
+            })),
           },
         },
       },
       include: {
-        ruleGroups: {
-          select: {
-            id: true,
-            groupName: true,
-            createdAt: true,
+        groups: {
+          include: {
+            group: {
+              select: {
+                id: true,
+                groupName: true,
+                isAdmin: true,
+                createdAt: true,
+              },
+            },
           },
         },
       },
@@ -324,11 +316,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
  *   - accessType?: READ | WRITE
  *   - includeSubfolders?: boolean
  *   - description?: string
- *   - groupNames?: string[]
+ *   - groupId?: number
  */
-export async function PUT(request: NextRequest): Promise<NextResponse<ApiResponse<RbacRule>>> {
+export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as CustomSession | null;
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
       return NextResponse.json(
@@ -342,7 +334,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     }
 
     // Check admin permission
-    const admin = await isUserAdmin(session.user?.groups || []);
+    const admin = (session.user as any).isAdmin;
     if (!admin) {
       return NextResponse.json(
         {
@@ -372,11 +364,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     const existingRule = await prisma.rbacAccessRule.findUnique({
       where: { id: ruleId },
       include: {
-        ruleGroups: {
-          select: {
-            id: true,
-            groupName: true,
-            createdAt: true,
+        groups: {
+          include: {
+            group: {
+              select: {
+                id: true,
+                groupName: true,
+                isAdmin: true,
+                createdAt: true,
+              },
+            },
           },
         },
       },
@@ -407,6 +404,24 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
       );
     }
 
+    // Verify groups exist if groupIds are provided
+    if (body.groupIds && body.groupIds.length > 0) {
+      const groups = await prisma.rbacGroup.findMany({
+        where: { id: { in: body.groupIds } },
+      });
+
+      if (groups.length !== body.groupIds.length) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'NOT_FOUND',
+            message: 'One or more groups not found',
+          },
+          { status: 404 }
+        );
+      }
+    }
+
     // Prepare update data
     const updateData: any = {};
 
@@ -422,72 +437,50 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     const updatedRule = await prisma.rbacAccessRule.update({
       where: { id: ruleId },
       data: updateData,
+    });
+
+    // Handle group updates if provided
+    if (body.groupIds) {
+      // Delete existing groups
+      await prisma.ruleGroup.deleteMany({
+        where: { ruleId },
+      });
+
+      // Create new groups
+      await prisma.ruleGroup.createMany({
+        data: body.groupIds.map((groupId) => ({
+          ruleId,
+          groupId,
+        })),
+      });
+    }
+
+    // Fetch updated rule with groups
+    const refreshedRule = await prisma.rbacAccessRule.findUnique({
+      where: { id: ruleId },
       include: {
-        ruleGroups: {
-          select: {
-            id: true,
-            groupName: true,
-            isAdmin: true,
-            createdAt: true,
+        groups: {
+          include: {
+            group: {
+              select: {
+                id: true,
+                groupName: true,
+                isAdmin: true,
+                createdAt: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Handle group updates if provided
-    if (body.groupNames && body.groupNames.length > 0) {
-      // Delete existing groups
-      await prisma.rbacRuleGroup.deleteMany({
-        where: { ruleId },
-      });
-
-      // Create new groups
-      await prisma.rbacRuleGroup.createMany({
-        data: body.groupNames.map((group) => {
-          // Handle both string and object formats
-          const groupName = typeof group === 'string' ? group : group.name;
-          const isAdmin = typeof group === 'string' ? false : (group.isAdmin || false);
-          return {
-            ruleId,
-            groupName,
-            isAdmin,
-          };
-        }),
-      });
-
-      // Refresh the rule to include updated groups
-      const refreshedRule = await prisma.rbacAccessRule.findUnique({
-        where: { id: ruleId },
-        include: {
-          ruleGroups: {
-            select: {
-              id: true,
-              groupName: true,
-              createdAt: true,
-            },
-          },
-        },
-      });
-
-      if (refreshedRule) {
-
-        return NextResponse.json(
-          {
-            success: true,
-            data: refreshedRule,
-          },
-          { status: 200 }
-        );
-      }
-    
-
     return NextResponse.json(
       {
         success: true,
-        data: updatedRule,
+        data: refreshedRule,
       },
       { status: 200 }
-    );}
+    );
 
   } catch (error) {
     console.error('[RBAC] Error updating rule:', error);
@@ -510,7 +503,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
  */
 export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResponse<null>>> {
   try {
-    const session = await getServerSession(authOptions) as CustomSession | null;
+    const session = await getServerSession(authOptions) ;
     
     if (!session?.user) {
       return NextResponse.json(
@@ -524,7 +517,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResp
     }
 
     // Check admin permission
-    const admin = await isUserAdmin(session.user?.groups || []);
+    const admin = (session.user as any).isAdmin;
     if (!admin) {
       return NextResponse.json(
         {
@@ -550,16 +543,9 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResp
       );
     }
 
-    // Get existing rule for audit logging
+    // Get existing rule
     const existingRule = await prisma.rbacAccessRule.findUnique({
       where: { id: ruleId },
-      include: {
-        ruleGroups: {
-          select: {
-            groupName: true,
-          },
-        },
-      },
     });
 
     if (!existingRule) {
@@ -573,7 +559,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResp
       );
     }
 
-    // Delete the rule (cascade deletes ruleGroups)
+    // Delete the rule (cascade deletes associated RuleGroup entries)
     await prisma.rbacAccessRule.delete({
       where: { id: ruleId },
     });

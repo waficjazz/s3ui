@@ -3,10 +3,10 @@
  * Keycloak OIDC Provider Integration with RBAC
  */
 
-import type { NextAuthOptions } from 'next-auth';
+import type { NextAuthOptions, Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import { getUserPermissions, formatPermissions, getPermissionsHash, isUserAdmin } from './rbac';
-import { CustomJWT, CustomSession } from './types';
 
 
 export const authOptions: NextAuthOptions = {
@@ -43,8 +43,8 @@ export const authOptions: NextAuthOptions = {
   // Callbacks
   callbacks: {
     // Called when JWT is created or updated
-    async jwt({ token, account, profile }): Promise<CustomJWT> {
-      const customToken = token as CustomJWT;
+    async jwt({ token, account, profile }): Promise<JWT> {
+      const customToken = token ;
       
       if (account && profile) {
         // Store tokens when user first signs in
@@ -213,9 +213,9 @@ export const authOptions: NextAuthOptions = {
     },
 
     // Called when session is accessed
-    async session({ session, token } ): Promise<CustomSession> {
-      const customSession   = session as CustomSession;
-      const customToken = token as CustomJWT;
+    async session({ session, token } ): Promise<Session> {
+      const customSession   = session ;
+      const customToken = token ;
       
       if (token) {
         // Extract groups from the stored token
@@ -228,7 +228,7 @@ export const authOptions: NextAuthOptions = {
           groups,
           permissions: customToken.permissions,
           isAdmin: customToken.isAdmin
-        } as CustomSession['user'];
+        };
         customSession.accessToken = customToken.accessToken;
         customSession.refreshToken = customToken.refreshToken;
         customSession.expiresAt = customToken.expiresAt;

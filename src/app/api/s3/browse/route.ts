@@ -14,13 +14,13 @@ import { getServerSession } from 'next-auth/next';
 import { listObjects } from '@/lib/s3-client';
 import { hasPermission, hasBucketAccess } from '@/lib/rbac';
 import { authOptions } from '@/lib/auth';
-import { ApiResponse, BrowseResponse, CustomSession } from '@/lib/types';
+import { ApiResponse, BrowseResponse } from '@/lib/types';
 
 export async function GET(
   request: NextRequest
 ): Promise<NextResponse<ApiResponse<BrowseResponse>>> {
   try {
-    const session : CustomSession | null = await getServerSession(authOptions);
+    const session  = await getServerSession(authOptions);
     
     if (!session?.user) {
       return NextResponse.json(
@@ -32,10 +32,12 @@ export async function GET(
         { status: 401 }
       );
     }
-
+    const admin = (session.user).isAdmin;
+    
     const userPermissions = (session.user).permissions;
     
-    if (!userPermissions) {
+    // If admin, skip permission checks
+    if (!admin && !userPermissions) {
       return NextResponse.json(
         {
           success: false,
@@ -65,61 +67,69 @@ export async function GET(
       );
     }
 
-    // ✅ Check RBAC permissions
-    // If no prefix specified (root), check if user has access to ANY path in bucket
-    // If prefix specified, check if user has access to that specific path
-    const checkPath = prefix || '/';
-    
-    // For root path, allow if user has access to any subdirectory in the bucket
-    if (!prefix || prefix === '/') {
-      if (!hasBucketAccess(userPermissions, bucket)) {
-        console.log(`[RBAC] User denied access to bucket ${bucket}`);
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'FORBIDDEN',
-            message: `No access to bucket ${bucket}`,
-          },
-          { status: 403 }
-        );
+    // ✅ Check RBAC permissions (skip for admins)
+    if (!admin) {
+      // If no prefix specified (root), check if user has access to ANY path in bucket
+      // If prefix specified, check if user has access to that specific path
+      const checkPath = prefix || '/';
+      
+      // For root path, allow if user has access to any subdirectory in the bucket
+      if (!prefix || prefix === '/') {
+        if (!hasBucketAccess(userPermissions, bucket)) {
+          console.log(`[RBAC] User denied access to bucket ${bucket}`);
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'FORBIDDEN',
+              message: `No access to bucket ${bucket}`,
+            },
+            { status: 403 }
+          );
+        }
+      } else {
+        // For specific paths, check exact permission
+        if (!hasPermission(userPermissions, bucket, checkPath, 'READ')) {
+          console.log(`[RBAC] User denied READ access to ${bucket}${checkPath}`);
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'FORBIDDEN',
+              message: `No READ access to ${bucket}${checkPath}`,
+            },
+            { status: 403 }
+          );
+        }
       }
+      console.log(`[RBAC] User granted access to ${bucket}${checkPath}`);
     } else {
-      // For specific paths, check exact permission
-      if (!hasPermission(userPermissions, bucket, checkPath, 'READ')) {
-        console.log(`[RBAC] User denied READ access to ${bucket}${checkPath}`);
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'FORBIDDEN',
-            message: `No READ access to ${bucket}${checkPath}`,
-          },
-          { status: 403 }
-        );
-      }
+      console.log(`[Admin] Bypassing permission checks for admin user`);
     }
 
-    console.log(`[RBAC] User granted access to ${bucket}${checkPath}`);
 
     // ✅ List objects from S3 (one call)
     const result = await listObjects(bucket, prefix, maxKeys, continuationToken);
 
-    // ✅ Filter objects - only return items user has permission for
-    const filteredObjects = result.objects.filter((obj) => {
-      const hasAccess = hasPermission(userPermissions, bucket, obj.key, 'READ');
-      if (!hasAccess) {
-        console.log(`[RBAC] Filtering out object: ${bucket}${obj.key}`);
-      }
-      return hasAccess;
-    });
+    // ✅ Filter objects - only return items user has permission for (skip for admins)
+    const filteredObjects = admin
+      ? result.objects
+      : result.objects.filter((obj) => {
+          const hasAccess = hasPermission(userPermissions, bucket, obj.key, 'READ');
+          if (!hasAccess) {
+            console.log(`[RBAC] Filtering out object: ${bucket}${obj.key}`);
+          }
+          return hasAccess;
+        });
 
-    // ✅ Filter prefixes (folders) - only return subfolders user has permission for
-    const filteredPrefixes = result.commonPrefixes.filter((prefix) => {
-      const hasAccess = hasPermission(userPermissions, bucket, prefix.key, 'READ');
-      if (!hasAccess) {
-        console.log(`[RBAC] Filtering out prefix: ${bucket}/${prefix.key}`);
-      }
-      return hasAccess;
-    });
+    // ✅ Filter prefixes (folders) - only return subfolders user has permission for (skip for admins)
+    const filteredPrefixes = admin
+      ? result.commonPrefixes
+      : result.commonPrefixes.filter((prefix) => {
+          const hasAccess = hasPermission(userPermissions, bucket, prefix.key, 'READ');
+          if (!hasAccess) {
+            console.log(`[RBAC] Filtering out prefix: ${bucket}/${prefix.key}`);
+          }
+          return hasAccess;
+        });
 
     console.log(
       `[RBAC] Browse results: ${filteredObjects.length}/${result.objects.length} objects, ` +

@@ -79,30 +79,35 @@ export interface BucketPermission {
         includeSubfolders: boolean;
 }
 
-export interface CustomJWT extends JWT {
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-  groups?: string[];
-  permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
-  permissionsHash?: string;
-  permissionsRefreshedAt?: number;
-  isAdmin: boolean ;
+
+
+export interface RbacRule {
+  id: number;
+  bucketName: string;
+  path: string | null;
+  accessType: 'READ' | 'WRITE';
+  includeSubfolders: boolean;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  groups: Array<{
+    id: number;
+    ruleId: number;
+    groupId: number;
+    group: {
+      id: number;
+      groupName: string;
+      isAdmin: boolean;
+      createdAt: Date;
+    };
+    createdAt: Date;
+  }>;
 }
 
-export interface CustomSession extends Session {
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    id?: string;
-    preferred_username?: string;
-    groups?: string[];
-    isAdmin: boolean ;
-    permissions?: Record<string, any>; // { "bucket/path": { accessType, includeSubfolders } }
-  },
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-
+export interface RbacGroup {
+  id: number;
+  groupName: string;
+  isAdmin: boolean;
+  createdAt: Date;
+  updatedAt: Date | null;
 }
