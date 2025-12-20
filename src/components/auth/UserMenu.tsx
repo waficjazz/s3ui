@@ -40,7 +40,7 @@ export const UserMenu: React.FC = () => {
   const userName = session.user.name || session.user.email || 'User';
   const userInitials = userName
     .split(' ')
-    .map((n) => n[0])
+    .map((n : any) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
