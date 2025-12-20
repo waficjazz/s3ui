@@ -1,7 +1,10 @@
-create a separete route for groups management
-Use it in admin RBAC frontend
+fix dark modes bugs in admin page
 
-do not delete group if from rule
+handle delete with rbac and delete may folder 
 
-check for admin user in s3 routes
+handle donwload for folder 
 
+handle service account 
+
+
+group permission check to functions 

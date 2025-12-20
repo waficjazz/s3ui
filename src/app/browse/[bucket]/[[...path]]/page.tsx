@@ -370,7 +370,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
             </div>
 
             {searchResults.length === 0 ? (
-              <p className="text-gray-600 text-center py-8">
+              <p className="text-gray-600 dark:text-gray-400 text-center py-8">
                 No files found matching "{searchQuery}"
               </p>
             ) : (
@@ -378,11 +378,11 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
                 {searchResults.map((result, index) => (
                   <div
                     key={`${result.key}-${index}`}
-                    className="p-3 border border-gray-200 rounded hover:bg-gray-50 transition-colors flex items-center justify-between"
+                    className="p-3 border border-gray-200 dark:border-slate-700 rounded hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{result.key}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium truncate text-foreground">{result.key}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {result.size ? `${(result.size / 1024 / 1024).toFixed(2)} MB` : 'Folder'}
                       </p>
                     </div>

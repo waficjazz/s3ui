@@ -149,10 +149,16 @@ export function hasAccessToChildPaths(
     return null;
   }
 
-  // Normalize path
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const searchPrefix = `${bucket}${normalizedPath}${normalizedPath.endsWith('/') ? '' : '/'}`;
+  console.log("checking child paths against permissions:", permissions);
 
+  // Normalize path - ensure it ends with / for prefix matching
+  let normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (!normalizedPath.endsWith('/')) {
+    normalizedPath += '/';
+  }
+  
+  const searchPrefix = `${bucket}${normalizedPath}`;
+  console.log("searching for child paths with prefix:", searchPrefix);
   let maxAccess: 'READ' | 'WRITE' | null = null;
 
   // Check all permissions to find any that are children of this path
@@ -160,8 +166,8 @@ export function hasAccessToChildPaths(
     // Check if this permission is a child of our search path
     if (key.startsWith(searchPrefix)) {
       const perm = permissions[key];
-      // WRITE is more permissive than READ
-      if (perm.accessType === 'WRITE' || maxAccess === 'READ') {
+      // Set maxAccess if we don't have one yet, or if we find WRITE (more permissive)
+      if (!maxAccess || perm.accessType === 'WRITE') {
         maxAccess = perm.accessType as 'READ' | 'WRITE';
       }
       if (maxAccess === 'WRITE') {
@@ -204,18 +210,24 @@ export function hasPermission(
   const key = `${bucket}${normalizedPath}`;
   // remove trailing slash 
   const normalizedKey = key.endsWith('/') && key.length > 1 ? key.slice(0, -1) : key;
-  console.log("checking exact key:", normalizedKey);
   if (permissions[normalizedKey]) {
     return checkAccessType(permissions[normalizedKey].accessType, requiredAccess);
   }
-
   // Check parent paths with includeSubfolders
   const pathSegments = normalizedPath.split('/').filter(Boolean);
-  for (let i = pathSegments.length - 1; i >= 0; i--) {
+  // Check all parent paths from deepest to shallowest, including the current path itself
+  for (let i = pathSegments.length; i >= 0; i--) {
     const parentPath = i === 0 ? '/' : `/${pathSegments.slice(0, i).join('/')}`;
     const parentKey = `${bucket}${parentPath}`;
+    console.log("checking parent key:", parentKey);
+    
+    // Check both with and without trailing slash
     if (permissions[parentKey] && permissions[parentKey].includeSubfolders) {
       return checkAccessType(permissions[parentKey].accessType, requiredAccess);
+    }
+    const parentKeyWithSlash = parentKey.endsWith('/') ? parentKey : `${parentKey}/`;
+    if (permissions[parentKeyWithSlash] && permissions[parentKeyWithSlash].includeSubfolders) {
+      return checkAccessType(permissions[parentKeyWithSlash].accessType, requiredAccess);
     }
   }
 

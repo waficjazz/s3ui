@@ -21,9 +21,9 @@ export function S3BrowserProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('s3-browser-view-mode');
-      return (saved as ViewMode) || 'grid';
+      return (saved as ViewMode) || 'list';
     }
-    return 'grid';
+    return 'list';
   });
 
   const setViewMode = useCallback((mode: ViewMode) => {

@@ -127,11 +127,11 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {/* Grid View */}
       {viewMode === 'grid' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 auto-rows-max">
           {allItems.map((item, index) => (
             <Card
               key={`${item.key}-${index}`}
-              className="p-4 hover:shadow-lg transition-shadow cursor-pointer group"
+              className="p-4 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group h-fit"
             >
               <div
                 className="text-center space-y-3"
@@ -191,12 +191,12 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {/* List View */}
       {viewMode === 'list' && (
-        <div className="border-t border-b border-border overflow-hidden">
+        <div className="border-t border-b border-gray-200 dark:border-slate-700 overflow-hidden">
           {allItems.map((item, index) => (
             <div
               key={`${item.key}-${index}`}
-              className={`p-4 hover:bg-accent transition-colors cursor-pointer ${
-                index !== allItems.length - 1 ? 'border-b border-border' : ''
+              className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
+                index !== allItems.length - 1 ? 'border-b border-gray-200 dark:border-slate-700' : ''
               }`}
               onClick={() => {
                 if (item.isFolder) {
