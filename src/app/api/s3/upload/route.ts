@@ -138,11 +138,5 @@ export async function POST(
   }
 }
 
-// Configure upload size limit (50MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-};
+// Configure upload size limit for App Router
+export const maxDuration = 60; // 60 seconds timeout

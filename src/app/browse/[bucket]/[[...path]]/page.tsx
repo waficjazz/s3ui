@@ -8,12 +8,14 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useS3Browse, useS3Download, useS3Buckets } from '@/hooks';
+import { useSession } from 'next-auth/react';
+import { useS3Browse, useS3Download, useS3Buckets, useS3Upload } from '@/hooks';
 import { BreadcrumbNav } from '@/components/s3-browser/BreadcrumbNav';
 import { SearchBar } from '@/components/s3-browser/SearchBar';
 import { FileBrowser } from '@/components/s3-browser/FileBrowser';
+import { UploadPreview } from '@/components/s3-browser/UploadPreview';
 import { UserMenu } from '@/components/auth/UserMenu';
-import { Cloud, Folder, Check, Download } from 'lucide-react';
+import { Cloud, Folder, Check, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,6 +35,7 @@ interface BrowsePageProps {
 
 export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [bucket, setBucket] = useState('');
   const [prefix, setPrefix] = useState('');
   const [fullPrefix, setFullPrefix] = useState('');
@@ -44,6 +47,11 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [showDownloadProgress, setShowDownloadProgress] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[] | null>(null);
+  const [showUploadPreview, setShowUploadPreview] = useState(false);
+
+  // Upload hook
+  const { uploading, uploadError, confirmUpload, clearUploadError } = useS3Upload();
 
   // Resolve params
   useEffect(() => {
@@ -145,6 +153,24 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
     router.push(`/browse/${encodeURIComponent(newBucket)}`);
   }, [router]);
 
+  // Handle file upload - show preview
+  const handleFileUpload = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0 || !bucket) return;
+    setSelectedFiles(Array.from(files));
+    setShowUploadPreview(true);
+  }, [bucket]);
+
+  // Wrapper to handle preview dialog and call hook's confirmUpload
+  const handleConfirmUpload = useCallback(async () => {
+    if (!selectedFiles) return;
+    
+    await confirmUpload(selectedFiles, bucket, fullPrefix, () => {
+      refetch();
+      setShowUploadPreview(false);
+      setSelectedFiles(null);
+    });
+  }, [selectedFiles, bucket, fullPrefix, refetch, confirmUpload]);
+
   if (!bucket) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -202,6 +228,55 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Upload Button - Admin Only */}
+              {(session?.user as any)?.isAdmin && (
+                <div>
+                  {/* File Input - Files */}
+                  <input
+                    type="file"
+                    id="file-upload"
+                    multiple
+                    onChange={(e) => handleFileUpload(e.target.files)}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  {/* File Input - Directory */}
+                  <input
+                    type="file"
+                    id="dir-upload"
+                    webkitdirectory="true"
+                    onChange={(e) => handleFileUpload(e.target.files)}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        disabled={uploading}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {uploading ? 'Uploading...' : 'Upload'}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        disabled={uploading}
+                      >
+                        Upload Files
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => document.getElementById('dir-upload')?.click()}
+                        disabled={uploading}
+                      >
+                        Upload Directory
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+
               {/* User Menu */}
               <AdminButton  />
               <UserMenu />
@@ -221,6 +296,19 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
 
         {/* Search Bar */}
         <SearchBar onSearch={handleSearch} isLoading={isSearching} />
+
+        {/* Upload Error Display */}
+        {uploadError && (
+          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded flex justify-between items-center">
+            <span className="text-sm">{uploadError}</span>
+            <button
+              onClick={clearUploadError}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-4"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Download Progress Dialog */}
         {showDownloadProgress && (
@@ -245,6 +333,24 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
               </div>
             </DialogContent>
           </Dialog>
+        )}
+
+        {/* Upload Preview Dialog */}
+        {selectedFiles && (
+          <UploadPreview
+            open={showUploadPreview}
+            onOpenChange={(open) => {
+              setShowUploadPreview(open);
+              if (!open) {
+                setSelectedFiles(null);
+              }
+            }}
+            bucket={bucket}
+            prefix={fullPrefix}
+            files={selectedFiles}
+            uploading={uploading}
+            onConfirm={handleConfirmUpload}
+          />
         )}
 
         {/* Search Results */}
