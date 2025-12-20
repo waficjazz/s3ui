@@ -476,14 +476,14 @@ export default function AdminRbacPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">RBAC Administration</h1>
-              <p className="text-gray-600 mt-2">Manage access rules and groups for S3 resources</p>
+              <h1 className="text-4xl font-bold text-foreground">RBAC Administration</h1>
+              <p className="text-muted-foreground mt-2">Manage access rules and groups for S3 resources</p>
             </div>
             <Link href="/">
               <Button variant="outline">Back to Browser</Button>
@@ -506,12 +506,12 @@ export default function AdminRbacPage() {
         ) : (
           <>
             {/* Admin Groups Section */}
-            <Card className="bg-white shadow-lg">
-              <div className="p-6 border-b border-gray-200">
+            <Card className="bg-card shadow-lg">
+              <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Admin Groups</h2>
-                    <p className="text-gray-600 text-sm mt-1">
+                    <h2 className="text-2xl font-bold text-foreground">Admin Groups</h2>
+                    <p className="text-muted-foreground text-sm mt-1">
                       Manage which groups have administrator privileges ({groups.filter((g) => g.isAdmin).length})
                     </p>
                   </div>
@@ -523,7 +523,7 @@ export default function AdminRbacPage() {
 
               <div className="p-6">
                 {groups.filter((g) => g.isAdmin).length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No admin groups configured</p>
+                  <p className="text-muted-foreground text-center py-8">No admin groups configured</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -592,12 +592,12 @@ export default function AdminRbacPage() {
             </Card>
 
             {/* RBAC Rules Section */}
-            <Card className="bg-white shadow-lg">
-              <div className="p-6 border-b border-gray-200">
+            <Card className="bg-card shadow-lg">
+              <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Access Rules</h2>
-                    <p className="text-gray-600 text-sm mt-1">Configure who can access which S3 resources ({rules.length})</p>
+                    <h2 className="text-2xl font-bold text-foreground">Access Rules</h2>
+                    <p className="text-muted-foreground text-sm mt-1">Configure who can access which S3 resources ({rules.length})</p>
                   </div>
                   <Button onClick={openCreateRuleDialog} className="bg-blue-600 hover:bg-blue-700">
                     + Create Rule
@@ -607,7 +607,7 @@ export default function AdminRbacPage() {
 
               <div className="p-6">
                 {rules.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No rules found</p>
+                  <p className="text-muted-foreground text-center py-8">No rules found</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -630,8 +630,8 @@ export default function AdminRbacPage() {
                               <Badge
                                 className={
                                   rule.accessType === 'WRITE'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-blue-100 text-blue-800'
+                                    ? 'bg-red-600 text-white dark:bg-red-500'
+                                    : 'bg-blue-600 text-white dark:bg-blue-500'
                                 }
                               >
                                 {rule.accessType}
@@ -647,8 +647,8 @@ export default function AdminRbacPage() {
                                       key={rg.id}
                                       className={
                                         group?.isAdmin
-                                          ? 'bg-amber-100 text-amber-800'
-                                          : 'bg-gray-100 text-gray-800'
+                                          ? 'bg-amber-600 text-white dark:bg-amber-500'
+                                          : 'bg-gray-600 text-white dark:bg-gray-500'
                                       }
                                     >
                                       {group?.groupName}
@@ -701,7 +701,7 @@ export default function AdminRbacPage() {
             <form onSubmit={handleRuleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Bucket Name *
                   </label>
                   <Input
@@ -715,7 +715,7 @@ export default function AdminRbacPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Path (optional)
                   </label>
                   <Input
@@ -728,7 +728,7 @@ export default function AdminRbacPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Access Type *
                   </label>
                   <select
@@ -759,7 +759,7 @@ export default function AdminRbacPage() {
                       }
                       className="rounded border-gray-300"
                     />
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-foreground">
                       Include Subfolders
                     </span>
                   </label>
@@ -767,7 +767,7 @@ export default function AdminRbacPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Description
                 </label>
                 <Input
@@ -781,7 +781,7 @@ export default function AdminRbacPage() {
 
               {/* Groups Section */}
               <div className="border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Groups * (Type a new group name or select existing)
                 </label>
 
@@ -832,11 +832,11 @@ export default function AdminRbacPage() {
                           className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-foreground">
                               {group.groupName}
                             </span>
                             {group.isAdmin && (
-                              <Badge className="bg-amber-100 text-amber-800">
+                              <Badge className="bg-amber-600 text-white dark:bg-amber-500">
                                 Admin
                               </Badge>
                             )}
@@ -855,7 +855,7 @@ export default function AdminRbacPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">
+                  <p className="text-sm text-muted-foreground text-center py-4">
                     No groups added yet
                   </p>
                 )}
@@ -893,7 +893,7 @@ export default function AdminRbacPage() {
             <div className="space-y-6">
               {/* Create New Admin Group */}
               <div className="border-b pb-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Create New Admin Group</h3>
+                <h3 className="font-semibold text-foreground mb-3">Create New Admin Group</h3>
                 <div className="space-y-3">
                   <Input
                     value={adminGroupForm.newAdminGroupName}
@@ -916,7 +916,7 @@ export default function AdminRbacPage() {
 
               {/* Promote Existing Group */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Promote Existing Group</h3>
+                <h3 className="font-semibold text-foreground mb-3">Promote Existing Group</h3>
                 <div className="space-y-3">
                   <select
                     value={adminGroupForm.selectedExistingGroup}

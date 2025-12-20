@@ -52,7 +52,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading files...</p>
+          <p className="text-muted-foreground">Loading files...</p>
         </div>
       </div>
     );
@@ -60,8 +60,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   if (!data) {
     return (
-      <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
-        <p className="text-gray-600">No data available</p>
+      <div className="p-6 bg-card border border-border rounded-lg text-center">
+        <p className="text-muted-foreground">No data available</p>
       </div>
     );
   }
@@ -99,8 +99,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
-        <div className="text-sm text-gray-600">
+      <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
+        <div className="text-sm text-muted-foreground">
           {allItems.length} items
         </div>
         <div className="flex gap-2">
@@ -179,7 +179,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 )}
 
                 {item.isFolder && (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-500">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground">
                     Click to open
                   </div>
                 )}
@@ -191,12 +191,12 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {/* List View */}
       {viewMode === 'list' && (
-        <div className="border-t border-b border-gray-200 overflow-hidden">
+        <div className="border-t border-b border-border overflow-hidden">
           {allItems.map((item, index) => (
             <div
               key={`${item.key}-${index}`}
-              className={`p-4 hover:bg-gray-200 transition-colors cursor-pointer ${
-                index !== allItems.length - 1 ? 'border-b border-gray-200' : ''
+              className={`p-4 hover:bg-accent transition-colors cursor-pointer ${
+                index !== allItems.length - 1 ? 'border-b border-border' : ''
               }`}
               onClick={() => {
                 if (item.isFolder) {
@@ -210,7 +210,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                   {getFileIcon(item.isFolder, item.key)}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{getFileName(item.key)}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {item.isFolder ? 'Folder' : formatFileSize(item.size)}
                     </p>
                   </div>
@@ -287,9 +287,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       )}
 
       {allItems.length === 0 && (
-        <div className="p-8 text-center bg-gray-50 rounded-lg border border-gray-200">
-          <Folder className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600">No files or folders in this directory</p>
+        <div className="p-8 text-center bg-card rounded-lg border border-border">
+          <Folder className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">No files or folders in this directory</p>
         </div>
       )}
     </div>

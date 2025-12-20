@@ -157,15 +157,15 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             {/* Logo/Title */}
             <div className="flex items-center gap-2">
               <Cloud className="w-6 h-6 text-blue-500" />
-              <h1 className="text-2xl font-bold text-gray-900">S3 Browser</h1>
+              <h1 className="text-2xl font-bold text-foreground">S3 Browser</h1>
             </div>
 
             {/* Center Section: Bucket Selector and User Menu */}
@@ -249,7 +249,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
 
         {/* Search Results */}
         {showSearchResults && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">
                 Search Results for "{searchQuery}"
@@ -313,7 +313,7 @@ export default function BrowsePage({ params: paramsPromise }: BrowsePageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white mt-12">
+      <footer className="border-t border-border bg-background mt-12">
         <div className="max-w-7xl mx-auto px-4 py-8 text-center text-sm text-gray-600">
           <p>S3 Browser • Secure on-premises file access</p>
         </div>

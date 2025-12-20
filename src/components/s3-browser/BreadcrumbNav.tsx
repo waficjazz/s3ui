@@ -41,7 +41,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
   ];
 
   return (
-    <div className="flex items-center gap-2 p-4 bg-white border border-gray-200 rounded-lg overflow-x-auto">
+    <div className="flex items-center gap-2 p-4 bg-card border border-border rounded-lg overflow-x-auto">
       {/* Home Button */}
       <Button
         variant="ghost"
@@ -58,7 +58,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         <React.Fragment key={breadcrumb.path || 'root'}>
           {/* Separator */}
           {index > 0 && (
-            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           )}
 
           {/* Breadcrumb Item */}
@@ -81,7 +81,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
       ))}
 
       {/* Edit Path Manually (Optional) */}
-      <div className="ml-auto flex-shrink-0 text-xs text-gray-500">
+      <div className="ml-auto flex-shrink-0 text-xs text-muted-foreground">
         {prefix && `${prefix.split('/').filter(Boolean).length} level(s)`}
       </div>
     </div>

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { S3BrowserProvider } from "@/context/S3BrowserContext";
 import { SessionProvider } from "@/components/auth/SessionProvider";
+import { ThemeProvider } from "@/context/ThemeContext";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,15 +27,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+        )}
       >
-        <SessionProvider>
-          <S3BrowserProvider>
-            {children}
-          </S3BrowserProvider>
-        </SessionProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider>
+            <S3BrowserProvider>
+              {children}
+            </S3BrowserProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
